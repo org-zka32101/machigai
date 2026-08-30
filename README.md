@@ -31,13 +31,19 @@ lib/
 │   ├── ranking.dart
 │   └── moderation_config.dart
 ├── services/            # ビジネスロジック層
-│   ├── moderation_service.dart     # UGCモデレーション（★必須）
-│   ├── challenge_service.dart      # チャレンジ管理
-│   ├── challenge_attempt_service.dart
-│   ├── ai_generation_service.dart  # AI診断
-│   ├── ranking_service.dart        # ランキング計算
-│   └── analytics_service.dart      # 計測（Analytics/Crashlytics/Remote Config）
-├── viewmodels/          # Riverpod Provider群（未実装）
+│   ├── moderation_service.dart                # UGCモデレーション（★必須）
+│   ├── challenge_service.dart                 # チャレンジ管理
+│   ├── challenge_attempt_service.dart         # 解答記録
+│   ├── ai_generation_service.dart             # AI診断
+│   ├── ranking_service.dart                   # ランキング計算
+│   ├── analytics_service.dart                 # 計測（Analytics/Crashlytics）
+│   ├── initial_problem_pool_service.dart      # 初期問題プール（Must7）
+│   ├── video_template_service.dart            # ビデオテンプレ管理
+│   └── index.dart
+├── viewmodels/          # Riverpod Provider群（実装済）
+│   ├── challenge_provider.dart                # チャレンジ状態管理
+│   ├── video_template_provider.dart           # ビデオ編集状態管理
+│   └── index.dart
 ├── views/               # UI画面（未実装）
 ├── widgets/             # カスタムウィジェット（未実装）
 ├── config/              # 設定ファイル
@@ -53,36 +59,38 @@ lib/
 - リリース時点では**外せない**（批判的レビューで必須化）
 
 ### 2. **初期問題プール** ⭐ Must7（コールドスタート対策）
-- 50-100件の事前生成問題
-- リリース初速でUGCが0でも解答体験可能
-- AI検診と同ロジックで検証
+- ✅ 50-100件の事前生成問題（InitialProblemPoolService実装済）
+- ✅ AI検診スクリプト（seed_initial_problems.dart完備）
+- ✅ Firestore一括投入パイプライン
+- ✅ リリース初速でUGCが0でも解答体験可能
 
 ### 3. **動画編集 + AI検診** ⭐ 技術検証優先
-- テンプレート動画から1箇所編集
-- AI診断で「問題として成立するか」を判定
-- 7日プロトが「△」判定のため最優先検証
+- ✅ テンプレート動画から1箇所編集（VideoTemplateService実装済）
+- ✅ 4種類の編集タイプ実装（明るさ/色/配置/クロップ）
+- ✅ AI診断で問題成立度を判定
+- ✅ ViewModel層統合（VideoEditNotifier）
 
 ## 📊 実装優先順序
 
 | # | 項目 | Status | Notes |
 |---|---|---|---|
-| 1 | petit_core/petit_ui/petit_ai導入 | ⏳ 保留中 | パッケージ依存 |
+| 1 | petit_core/petit_ui/petit_ai導入 | ✅ Path設定済 | pubspec.yaml参照 |
 | 2 | データモデル | ✅ 実装済 | 5モデル + ModerationConfig |
-| 3 | Service層 | ✅ 部分実装 | 6サービス（スケルトン） |
-| 4 | **初期問題プール投入パイプライン** | ⏳ **最優先** | Must7対応 |
+| 3 | Service層 | ✅ 8サービス実装 | 初期問題プール+動画編集追加 |
+| 4 | **初期問題プール投入パイプライン** | ✅ **実装済** | Must7対応・seed script完備 |
 | 5 | 計測3点セット | ✅ 実装済 | Analytics/Crashlytics/Remote Config |
-| 6 | ViewModel(Riverpod) | ⏳ 未実装 | 状態管理 |
-| 7 | **動画編集ツール + AI検診** | ⏳ **技術検証** | ㉙7日プロト |
-| 8 | Aha Moment最短動線 | ⏳ 未実装 | 出題/解答両軸 |
-| 9 | 各画面View | ⏳ 未実装 | 8画面想定 |
-| 10 | アニメ・エフェクト・サウンド | ⏳ 未実装 | Lottie/ハプティクス |
-| 11 | **UGCモデレーション実装** | ⏳ 部分実装 | NGワード+簡易審査 |
-| 12 | オンボ + ペイウォール | ⏳ 未実装 | Remote Config連携 |
-| 13 | Retentionトリガー | ⏳ 未実装 | Day7/14/30 |
+| 6 | ViewModel(Riverpod) | ✅ **実装済** | ChallengeProvider, VideoTemplateProvider |
+| 7 | **動画編集ツール + AI検診** | ✅ **実装済** | VideoTemplateService + Edit types |
+| 8 | Aha Moment最短動線 | ⏳ 次フェーズ | 出題/解答両軸 |
+| 9 | 各画面View | ⏳ 次フェーズ | TemplateSelect, Edit, ChallengePublished等 |
+| 10 | アニメ・エフェクト・サウンド | ⏳ 予定 | Lottie/ハプティクス |
+| 11 | **UGCモデレーション実装** | 🟡 部分実装 | NGワード✅ + 簡易審査フロー⏳ |
+| 12 | オンボ + ペイウォール | ⏳ 予定 | Remote Config連携 |
+| 13 | Retentionトリガー | ⏳ 予定 | Day7/14/30 |
 | 14 | エラーハンドリング | ⏳ 進行中 | 全API層 |
-| 15 | テスト | ⏳ 未実装 | unit/widget/integration |
-| 16 | CI/CD | ⏳ 未実装 | GitHub Actions |
-| 17 | リリース準備 | ⏳ 未実装 | 審査対策・ソフトローンチ |
+| 15 | テスト | ⏳ 予定 | unit/widget/integration |
+| 16 | CI/CD | ⏳ 予定 | GitHub Actions |
+| 17 | リリース準備 | ⏳ 予定 | 審査対策・ソフトローンチ |
 
 ## 🎮 Aha Moment定義
 
