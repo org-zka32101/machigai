@@ -2,8 +2,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:machigai/config/firebase_options.dart';
 import 'package:machigai/services/analytics_service.dart';
+import 'package:machigai/views/index.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +33,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'まちがいラボ',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -39,7 +41,6 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        fontFamily: 'RobotoMono',
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -47,54 +48,73 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
-        fontFamily: 'RobotoMono',
       ),
       themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      routerConfig: _router,
     );
   }
 }
 
-/// ホーム画面（スケルトン）
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('まちがいラボ'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              '🧩 間違い探し',
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('問題を解く'),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.edit),
-              label: const Text('問題を作る'),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.trending_up),
-              label: const Text('ランキング'),
-            ),
-          ],
+/// GoRouter設定
+final _router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const HomeScreen(),
+      routes: [
+        // 問題作成フロー
+        GoRoute(
+          path: 'template-select',
+          builder: (context, state) => const TemplateSelectScreen(),
         ),
-      ),
-    );
-  }
-}
+        GoRoute(
+          path: 'edit',
+          builder: (context, state) {
+            final templateId = state.extra as String?;
+            return EditScreen(templateId: templateId ?? '');
+          },
+        ),
+        GoRoute(
+          path: 'challenge-published',
+          builder: (context, state) {
+            final extras = state.extra as Map<String, dynamic>?;
+            if (extras == null) {
+              return const HomeScreen();
+            }
+            return ChallengePublishedScreen(
+              template: extras['template'] as VideoTemplate,
+              edit: extras['edit'] as VideoEdit,
+            );
+          },
+        ),
+
+        // 問題解答フロー
+        // GoRoute(
+        //   path: 'solve',
+        //   builder: (context, state) => const SolveScreen(),
+        // ),
+        // GoRoute(
+        //   path: 'result',
+        //   builder: (context, state) => const ResultScreen(),
+        // ),
+
+        // ランキング・プロフィール
+        // GoRoute(
+        //   path: 'ranking',
+        //   builder: (context, state) => const RankingScreen(),
+        // ),
+        // GoRoute(
+        //   path: 'profile',
+        //   builder: (context, state) => const ProfileScreen(),
+        // ),
+      ],
+    ),
+  ],
+  errorBuilder: (context, state) => Scaffold(
+    appBar: AppBar(title: const Text('エラー')),
+    body: Center(
+      child: Text('ページが見つかりません: ${state.location}'),
+    ),
+  ),
+);
