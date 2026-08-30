@@ -23,14 +23,14 @@
 
 ```
 lib/
-├── models/              # データモデル
+├── models/              # データモデル ✅
 │   ├── user_generated_challenge.dart
 │   ├── challenge_attempt.dart
 │   ├── user.dart
 │   ├── daily_streak.dart
 │   ├── ranking.dart
 │   └── moderation_config.dart
-├── services/            # ビジネスロジック層
+├── services/            # ビジネスロジック層 ✅
 │   ├── moderation_service.dart                # UGCモデレーション（★必須）
 │   ├── challenge_service.dart                 # チャレンジ管理
 │   ├── challenge_attempt_service.dart         # 解答記録
@@ -40,15 +40,20 @@ lib/
 │   ├── initial_problem_pool_service.dart      # 初期問題プール（Must7）
 │   ├── video_template_service.dart            # ビデオテンプレ管理
 │   └── index.dart
-├── viewmodels/          # Riverpod Provider群（実装済）
+├── viewmodels/          # Riverpod Provider群 ✅
 │   ├── challenge_provider.dart                # チャレンジ状態管理
 │   ├── video_template_provider.dart           # ビデオ編集状態管理
 │   └── index.dart
-├── views/               # UI画面（未実装）
+├── views/               # UI画面 ✅ 部分実装
+│   ├── home.dart                              # ホーム画面（ナビゲーションハブ）
+│   ├── template_select.dart                   # テンプレート選択画面
+│   ├── edit.dart                              # ビデオ編集画面（4種類の編集ツール）
+│   ├── challenge_published.dart               # 問題出題確認＆シェア画面
+│   └── index.dart
 ├── widgets/             # カスタムウィジェット（未実装）
 ├── config/              # 設定ファイル
 │   └── firebase_options.dart
-└── main.dart
+└── main.dart            # GoRouter設定 ✅
 ```
 
 ## 🚨 Critical Must-Features
@@ -81,16 +86,16 @@ lib/
 | 5 | 計測3点セット | ✅ 実装済 | Analytics/Crashlytics/Remote Config |
 | 6 | ViewModel(Riverpod) | ✅ **実装済** | ChallengeProvider, VideoTemplateProvider |
 | 7 | **動画編集ツール + AI検診** | ✅ **実装済** | VideoTemplateService + Edit types |
-| 8 | Aha Moment最短動線 | ⏳ 次フェーズ | 出題/解答両軸 |
-| 9 | 各画面View | ⏳ 次フェーズ | TemplateSelect, Edit, ChallengePublished等 |
-| 10 | アニメ・エフェクト・サウンド | ⏳ 予定 | Lottie/ハプティクス |
-| 11 | **UGCモデレーション実装** | 🟡 部分実装 | NGワード✅ + 簡易審査フロー⏳ |
-| 12 | オンボ + ペイウォール | ⏳ 予定 | Remote Config連携 |
-| 13 | Retentionトリガー | ⏳ 予定 | Day7/14/30 |
-| 14 | エラーハンドリング | ⏳ 進行中 | 全API層 |
-| 15 | テスト | ⏳ 予定 | unit/widget/integration |
-| 16 | CI/CD | ⏳ 予定 | GitHub Actions |
-| 17 | リリース準備 | ⏳ 予定 | 審査対策・ソフトローンチ |
+| 8 | **Aha Moment最短動線（Core）** | ✅ **実装済** | Home→Select→Edit→Publish完成 |
+| 9 | **各画面View（Phase 3）** | ✅ **部分実装** | Home ✅, TemplateSelect ✅, Edit ✅, ChallengePublished ✅ |
+| 10 | SolveScreen + ResultScreen | ⏳ 進行中 | 解答フロー実装予定 |
+| 11 | Ranking + Profile画面 | ⏳ 予定 | ユーザー統計表示 |
+| 12 | アニメ・エフェクト・サウンド | ⏳ 予定 | Lottie/ハプティクス |
+| 13 | **UGCモデレーション実装** | 🟡 部分実装 | NGワード✅ + 簡易審査フロー⏳ |
+| 14 | Firebase統合（Firestore保存） | ⏳ 予定 | Backend接続 |
+| 15 | petit_ai統合 | ⏳ 予定 | AI診断スコアリング |
+| 16 | オンボ + ペイウォール | ⏳ 予定 | Remote Config連携 |
+| 17 | テスト | ⏳ 予定 | unit/widget/integration |
 
 ## 🎮 Aha Moment定義
 
@@ -213,9 +218,17 @@ integration   → 課金動線＋UGC作成→出題→解答
 
 ---
 
-**開発ステージ**: 🏗️ Initial Scaffolding (Models + Services 実装中)
+**開発ステージ**: 🎬 Phase 3: View Layer Implementation (Aha Moment最短動線完成)
+
+**Phase 1-3 Summary**:
+- ✅ Phase 1: Models + Services (1,572 lines)
+- ✅ Phase 2: Must7 + Video Editing (1,053 lines)
+- ✅ Phase 3: Aha Moment View Flow (2,000+ lines)
+
+**Current**: 4 screens完成（Home → TemplateSelect → Edit → ChallengePublished）
 
 **Next Steps**:
-1. petit_core/petit_ui/petit_ai パッケージの統合
-2. 初期問題プール投入パイプライン実装（Must7）
-3. 動画編集ツール + AI検診の技術検証
+1. SolveScreen + ResultScreen 実装（解答フロー）
+2. Ranking + Profile 画面実装
+3. petit_ai 統合（AIスコアリング）
+4. Firebase Firestore 接続（問題保存）
