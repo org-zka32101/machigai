@@ -118,14 +118,14 @@ final _router = GoRouter(
         ),
 
         // ランキング・プロフィール
-        // GoRoute(
-        //   path: 'ranking',
-        //   builder: (context, state) => const RankingScreen(),
-        // ),
-        // GoRoute(
-        //   path: 'profile',
-        //   builder: (context, state) => const ProfileScreen(),
-        // ),
+        GoRoute(
+          path: 'ranking',
+          builder: (context, state) => const RankingScreen(),
+        ),
+        GoRoute(
+          path: 'profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
       ],
     ),
   ],
