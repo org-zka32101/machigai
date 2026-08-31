@@ -90,24 +90,42 @@ final _router = GoRouter(
         ),
 
         // 問題解答フロー
-        // GoRoute(
-        //   path: 'solve',
-        //   builder: (context, state) => const SolveScreen(),
-        // ),
-        // GoRoute(
-        //   path: 'result',
-        //   builder: (context, state) => const ResultScreen(),
-        // ),
+        GoRoute(
+          path: 'solve',
+          builder: (context, state) {
+            final challengeId = state.queryParameters['id'];
+            final shareToken = state.queryParameters['token'];
+            return SolveScreen(
+              challengeId: challengeId,
+              shareToken: shareToken,
+            );
+          },
+        ),
+        GoRoute(
+          path: 'result',
+          builder: (context, state) {
+            final extras = state.extra as Map<String, dynamic>?;
+            if (extras == null) {
+              return const HomeScreen();
+            }
+            return ResultScreen(
+              challenge: extras['challenge'] as UserGeneratedChallenge,
+              isCorrect: extras['isCorrect'] as bool,
+              solveTimeSeconds: extras['solveTimeSeconds'] as int,
+              selectedRegionIndex: extras['selectedRegionIndex'] as int,
+            );
+          },
+        ),
 
         // ランキング・プロフィール
-        // GoRoute(
-        //   path: 'ranking',
-        //   builder: (context, state) => const RankingScreen(),
-        // ),
-        // GoRoute(
-        //   path: 'profile',
-        //   builder: (context, state) => const ProfileScreen(),
-        // ),
+        GoRoute(
+          path: 'ranking',
+          builder: (context, state) => const RankingScreen(),
+        ),
+        GoRoute(
+          path: 'profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
       ],
     ),
   ],
