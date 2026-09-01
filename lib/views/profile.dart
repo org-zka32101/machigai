@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:machigai/viewmodels/index.dart';
 
 /// プロフィール画面
 /// ユーザー統計、ストリーク、アチーブメントを表示
@@ -8,17 +9,108 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ダミーユーザーデータ
+    final currentUserIdAsync = ref.watch(currentUserIdProvider);
+
+    return currentUserIdAsync.when(
+      data: (userId) {
+        if (userId == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('プロフィール')),
+            body: const Center(
+              child: Text('ログインしてください'),
+            ),
+          );
+        }
+        return _ProfileContent(userId: userId);
+      },
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('プロフィール')),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stack) => Scaffold(
+        appBar: AppBar(title: const Text('プロフィール')),
+        body: Center(
+          child: Text('エラー: $error'),
+        ),
+      ),
+    );
+  }
+}
+
+/// プロフィール画面の内容
+class _ProfileContent extends ConsumerWidget {
+  final String userId;
+
+  const _ProfileContent({required this.userId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(userProfileProvider(userId));
+    final successRateAsync = ref.watch(userSuccessRateProvider(userId));
+
+    return userAsync.when(
+      data: (user) {
+        if (user == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('プロフィール')),
+            body: const Center(
+              child: Text('ユーザー情報を取得できません'),
+            ),
+          );
+        }
+
+        return successRateAsync.when(
+          data: (successRate) => _buildProfileScaffold(
+            context,
+            user,
+            successRate,
+          ),
+          loading: () => Scaffold(
+            appBar: AppBar(title: const Text('プロフィール')),
+            body: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (error, stack) => Scaffold(
+            appBar: AppBar(title: const Text('プロフィール')),
+            body: Center(
+              child: Text('成功率の取得に失敗: $error'),
+            ),
+          ),
+        );
+      },
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('プロフィール')),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stack) => Scaffold(
+        appBar: AppBar(title: const Text('プロフィール')),
+        body: Center(
+          child: Text('エラー: $error'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileScaffold(
+    BuildContext context,
+    dynamic user,
+    double successRate,
+  ) {
     final userProfile = _MockUserProfile(
-      userName: 'あなた',
-      userAvatar: '😎',
-      level: 12,
-      totalScore: 28500,
-      currentStreak: 7,
-      longestStreak: 21,
-      challengesCreated: 15,
-      challengesSolved: 143,
-      successRate: 87.5,
+      userName: user.displayName,
+      userAvatar: '😎', // TODO: Real avatar from user.avatar
+      level: user.level,
+      totalScore: user.totalScore,
+      currentStreak: user.currentStreak,
+      longestStreak: user.longestStreak,
+      challengesCreated: user.challengesCreated,
+      challengesSolved: user.challengesSolved,
+      successRate: (successRate * 100).clamp(0.0, 100.0),
     );
 
     return Scaffold(
@@ -318,7 +410,7 @@ class _StreakCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: currentStreak / longestStreak,
+              value: longestStreak > 0 ? currentStreak / longestStreak : 0,
               minHeight: 6,
               backgroundColor: Colors.orange[200],
               valueColor: AlwaysStoppedAnimation(Colors.orange[600]),
@@ -570,7 +662,6 @@ class _RecentActivitySection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ...activities.asMap().entries.map((entry) {
-            final index = entry.key;
             final activity = entry.value;
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),

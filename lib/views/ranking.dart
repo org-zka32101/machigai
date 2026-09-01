@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:machigai/models/index.dart';
-import 'package:machigai/services/ranking_service.dart';
+import 'package:machigai/viewmodels/index.dart';
 
 /// ランキング画面
 /// ユーザーの順位と友達のランキングを表示
@@ -30,7 +30,7 @@ class _RankingScreenState extends ConsumerState<RankingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final rankingService = RankingService();
+    final currentUserIdAsync = ref.watch(currentUserIdProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -47,25 +47,40 @@ class _RankingScreenState extends ConsumerState<RankingScreen>
         ),
       ),
       body: SafeArea(
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            // 日間ランキング
-            _RankingTabContent(
-              tabType: 'daily',
-              rankingService: rankingService,
-            ),
-            // 週間ランキング
-            _RankingTabContent(
-              tabType: 'weekly',
-              rankingService: rankingService,
-            ),
-            // 全期間ランキング
-            _RankingTabContent(
-              tabType: 'alltime',
-              rankingService: rankingService,
-            ),
-          ],
+        child: currentUserIdAsync.when(
+          data: (userId) {
+            if (userId == null) {
+              return const Center(
+                child: Text('ログインしてください'),
+              );
+            }
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                // 日間ランキング
+                _RankingTabContent(
+                  tabType: 'daily',
+                  userId: userId,
+                ),
+                // 週間ランキング
+                _RankingTabContent(
+                  tabType: 'weekly',
+                  userId: userId,
+                ),
+                // 全期間ランキング
+                _RankingTabContent(
+                  tabType: 'alltime',
+                  userId: userId,
+                ),
+              ],
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(),
+          ),
+          error: (error, stack) => Center(
+            child: Text('エラー: $error'),
+          ),
         ),
       ),
     );
@@ -73,89 +88,106 @@ class _RankingScreenState extends ConsumerState<RankingScreen>
 }
 
 /// ランキングタブコンテンツ
-class _RankingTabContent extends StatelessWidget {
+class _RankingTabContent extends ConsumerWidget {
   final String tabType;
-  final RankingService rankingService;
+  final String userId;
 
   const _RankingTabContent({
     required this.tabType,
-    required this.rankingService,
+    required this.userId,
   });
 
   @override
-  Widget build(BuildContext context) {
-    // ダミーランキングデータ
-    final mockRankings = _generateMockRankings();
-    final userRank = 15; // ダミー：ユーザーのランク
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 選択されたランキングタイプに応じたプロバイダーを選択
+    late final AsyncValue<List<Ranking>> rankingsAsync;
+    late final AsyncValue<Ranking?> userRankingAsync;
 
-    return CustomScrollView(
-      slivers: [
-        // ユーザーのランク表示
-        SliverToBoxAdapter(
-          child: _UserRankCard(
-            userRank: userRank,
-            userScore: 2850,
-            userAvatar: '👤',
-            userName: 'あなた',
+    switch (tabType) {
+      case 'daily':
+        rankingsAsync = ref.watch(dailyRankingProvider);
+        userRankingAsync = ref.watch(userRankingProvider(userId));
+        break;
+      case 'weekly':
+        rankingsAsync = ref.watch(weeklyRankingProvider);
+        userRankingAsync = ref.watch(userRankingProvider(userId));
+        break;
+      case 'alltime':
+        rankingsAsync = ref.watch(allTimeRankingProvider);
+        userRankingAsync = ref.watch(userRankingProvider(userId));
+        break;
+      default:
+        rankingsAsync = ref.watch(allTimeRankingProvider);
+        userRankingAsync = ref.watch(userRankingProvider(userId));
+    }
+
+    return rankingsAsync.when(
+      data: (rankings) {
+        return userRankingAsync.when(
+          data: (userRanking) {
+            return CustomScrollView(
+              slivers: [
+                // ユーザーのランク表示
+                if (userRanking != null)
+                  SliverToBoxAdapter(
+                    child: _UserRankCard(
+                      ranking: userRanking,
+                    ),
+                  ),
+
+                // ランキングリスト
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final ranking = rankings[index];
+                      final isUserRank = ranking.userId == userId;
+
+                      return _RankingTile(
+                        rank: index + 1,
+                        ranking: ranking,
+                        isUserRank: isUserRank,
+                      );
+                    },
+                    childCount: rankings.length,
+                  ),
+                ),
+              ],
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(),
           ),
-        ),
-
-        // ランキングリスト
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final ranking = mockRankings[index];
-              final isUserRank = index + 1 == userRank;
-
-              return _RankingTile(
-                rank: index + 1,
-                ranking: ranking,
-                isUserRank: isUserRank,
-              );
-            },
-            childCount: mockRankings.length,
+          error: (error, stack) => Center(
+            child: Text('ユーザーランクの取得に失敗: $error'),
           ),
-        ),
-      ],
-    );
-  }
-
-  List<RankingData> _generateMockRankings() {
-    return List.generate(
-      50,
-      (index) => RankingData(
-        rank: index + 1,
-        userName: 'ユーザー${index + 1}',
-        userAvatar: _getRandomEmoji(),
-        score: 5000 - (index * 100),
-        changeRank: index % 3 == 0 ? 1 : (index % 2 == 0 ? -1 : 0),
-        isFriend: index < 5, // 最初の5人は友達
+        );
+      },
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      error: (error, stack) => Center(
+        child: Text('ランキングの取得に失敗: $error'),
       ),
     );
-  }
-
-  String _getRandomEmoji() {
-    final emojis = ['😀', '😎', '🥳', '🤩', '😍', '🤔', '😏', '🎯'];
-    return emojis[DateTime.now().microsecond % emojis.length];
   }
 }
 
 /// ユーザーランクカード
 class _UserRankCard extends StatelessWidget {
-  final int userRank;
-  final int userScore;
-  final String userAvatar;
-  final String userName;
+  final Ranking ranking;
 
   const _UserRankCard({
-    required this.userRank,
-    required this.userScore,
-    required this.userAvatar,
-    required this.userName,
+    required this.ranking,
   });
 
   @override
   Widget build(BuildContext context) {
+    final changeIndicator = ranking.scoreChange > 0
+        ? '↑ ${ranking.scoreChange}位上昇'
+        : ranking.scoreChange < 0
+            ? '↓ ${(-ranking.scoreChange).abs()}位下降'
+            : '→ 変わらず';
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -183,7 +215,7 @@ class _UserRankCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '#$userRank',
+                    '#${ranking.rank}',
                     style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -203,7 +235,7 @@ class _UserRankCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          userAvatar,
+                          '😎', // TODO: Load real avatar from user profile
                           style: const TextStyle(fontSize: 32),
                         ),
                         const SizedBox(width: 8),
@@ -212,7 +244,7 @@ class _UserRankCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                userName,
+                                ranking.userName,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -221,7 +253,7 @@ class _UserRankCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'スコア: $userScore',
+                                'スコア: ${ranking.score}',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Colors.white70,
@@ -250,20 +282,32 @@ class _UserRankCard extends StatelessWidget {
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.trending_up,
+                  ranking.scoreChange > 0
+                      ? Icons.trending_up
+                      : ranking.scoreChange < 0
+                          ? Icons.trending_down
+                          : Icons.trending_flat,
                   size: 16,
-                  color: Colors.lightGreen,
+                  color: ranking.scoreChange > 0
+                      ? Colors.lightGreen
+                      : ranking.scoreChange < 0
+                          ? Colors.red[300]
+                          : Colors.grey[300],
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Text(
-                  '↑ 3位上昇',
+                  changeIndicator,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.lightGreen,
+                    color: ranking.scoreChange > 0
+                        ? Colors.lightGreen
+                        : ranking.scoreChange < 0
+                            ? Colors.red[300]
+                            : Colors.grey[300],
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -279,7 +323,7 @@ class _UserRankCard extends StatelessWidget {
 /// ランキングタイル
 class _RankingTile extends StatelessWidget {
   final int rank;
-  final RankingData ranking;
+  final Ranking ranking;
   final bool isUserRank;
 
   const _RankingTile({
@@ -325,7 +369,7 @@ class _RankingTile extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    ranking.userAvatar,
+                    '😎', // TODO: Load real avatar from user profile
                     style: const TextStyle(fontSize: 28),
                   ),
                   const SizedBox(width: 12),
@@ -395,7 +439,7 @@ class _RankingTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                if (ranking.changeRank > 0)
+                if (ranking.scoreChange > 0)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -407,7 +451,7 @@ class _RankingTile extends StatelessWidget {
                       SizedBox(
                         width: 20,
                         child: Text(
-                          '${ranking.changeRank}',
+                          '${ranking.scoreChange}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.green,
@@ -418,7 +462,7 @@ class _RankingTile extends StatelessWidget {
                       ),
                     ],
                   )
-                else if (ranking.changeRank < 0)
+                else if (ranking.scoreChange < 0)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -430,7 +474,7 @@ class _RankingTile extends StatelessWidget {
                       SizedBox(
                         width: 20,
                         child: Text(
-                          '${ranking.changeRank.abs()}',
+                          '${ranking.scoreChange.abs()}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.red,
@@ -469,23 +513,4 @@ class _RankingTile extends StatelessWidget {
       _ => Colors.grey[700] ?? Colors.grey,
     };
   }
-}
-
-/// ランキングデータモデル（ダミー用）
-class RankingData {
-  final int rank;
-  final String userName;
-  final String userAvatar;
-  final int score;
-  final int changeRank;
-  final bool isFriend;
-
-  RankingData({
-    required this.rank,
-    required this.userName,
-    required this.userAvatar,
-    required this.score,
-    required this.changeRank,
-    required this.isFriend,
-  });
 }

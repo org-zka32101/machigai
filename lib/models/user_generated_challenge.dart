@@ -13,6 +13,7 @@ class UserGeneratedChallenge {
   final String shareToken; // 共有用トークン
   final String moderationStatus; // 'pending', 'approved', 'rejected'
   final String? moderationReason; // リジェクト理由（あれば）
+  final double? aiScore; // AI品質スコア (0.0-100.0)
 
   UserGeneratedChallenge({
     required this.id,
@@ -26,6 +27,7 @@ class UserGeneratedChallenge {
     required this.shareToken,
     this.moderationStatus = 'pending',
     this.moderationReason,
+    this.aiScore,
   });
 
   /// Firestoreから復元
@@ -45,6 +47,7 @@ class UserGeneratedChallenge {
       shareToken: data['shareToken'] ?? '',
       moderationStatus: data['moderationStatus'] ?? 'pending',
       moderationReason: data['moderationReason'],
+      aiScore: data['aiScore'] != null ? (data['aiScore'] as num).toDouble() : null,
     );
   }
 
@@ -60,6 +63,7 @@ class UserGeneratedChallenge {
         'shareToken': shareToken,
         'moderationStatus': moderationStatus,
         'moderationReason': moderationReason,
+        'aiScore': aiScore,
       };
 
   /// コピーメソッド（状態更新用）
@@ -75,6 +79,7 @@ class UserGeneratedChallenge {
     String? shareToken,
     String? moderationStatus,
     String? moderationReason,
+    double? aiScore,
   }) {
     return UserGeneratedChallenge(
       id: id ?? this.id,
@@ -88,6 +93,7 @@ class UserGeneratedChallenge {
       shareToken: shareToken ?? this.shareToken,
       moderationStatus: moderationStatus ?? this.moderationStatus,
       moderationReason: moderationReason ?? this.moderationReason,
+      aiScore: aiScore ?? this.aiScore,
     );
   }
 }

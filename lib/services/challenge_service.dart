@@ -18,6 +18,7 @@ class ChallengeService {
     required String videoUrl,
     required Map<String, dynamic> editedPoint,
     required String difficulty,
+    double? aiScore,
   }) async {
     final id = const Uuid().v4();
     final shareToken = const Uuid().v4();
@@ -32,6 +33,7 @@ class ChallengeService {
       createdAt: now,
       shareToken: shareToken,
       moderationStatus: 'pending',
+      aiScore: aiScore,
     );
 
     await _firestore
