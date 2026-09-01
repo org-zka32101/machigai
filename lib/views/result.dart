@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import 'package:machigai/services/index.dart';
 
 /// リザルト画面
@@ -157,53 +158,72 @@ class _SuccessResultArea extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
+      child: Stack(
         children: [
-          // 成功アイコン（スケールアニメーション）
-          ScaleTransition(
-            scale: scaleAnimation,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.green[100],
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check,
-                size: 80,
-                color: Colors.green[600],
+          // Confetti Lottie animation (overlaid in background)
+          Positioned(
+            top: -50,
+            left: -50,
+            right: -50,
+            child: SizedBox(
+              height: 300,
+              child: Lottie.asset(
+                'assets/animations/confetti.json',
+                repeat: false,
+                fit: BoxFit.cover,
               ),
             ),
           ),
+          // Main content
+          Column(
+            children: [
+              // 成功アイコン（スケールアニメーション）
+              ScaleTransition(
+                scale: scaleAnimation,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.green[100],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check,
+                    size: 80,
+                    color: Colors.green[600],
+                  ),
+                ),
+              ),
 
-          const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-          // 成功メッセージ
-          const Text(
-            '正解です！',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
+              // 成功メッセージ
+              const Text(
+                '正解です！',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // サブメッセージ
+              Text(
+                '友達を「ひっかける」ことに成功！',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // スター表示（簡易版：難易度による）
+              _StarRating(difficulty: 'medium'),
+            ],
           ),
-
-          const SizedBox(height: 8),
-
-          // サブメッセージ
-          Text(
-            '友達を「ひっかける」ことに成功！',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // スター表示（簡易版：難易度による）
-          _StarRating(difficulty: 'medium'),
         ],
       ),
     );
@@ -231,28 +251,44 @@ class _FailureResultArea extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          // 失敗アイコン（シェイク）
-          AnimatedBuilder(
-            animation: shakeAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(shakeAnimation.value, 0),
-                child: child,
-              );
-            },
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.red[100],
-                shape: BoxShape.circle,
+          // Shake Lottie animation with failure icon
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Shake Lottie animation background
+              SizedBox(
+                width: 200,
+                height: 200,
+                child: Lottie.asset(
+                  'assets/animations/shake.json',
+                  repeat: false,
+                  fit: BoxFit.contain,
+                ),
               ),
-              child: Icon(
-                Icons.close,
-                size: 80,
-                color: Colors.red[600],
+              // 失敗アイコン（シェイク）
+              AnimatedBuilder(
+                animation: shakeAnimation,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(shakeAnimation.value, 0),
+                    child: child,
+                  );
+                },
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.red[100],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.close,
+                    size: 80,
+                    color: Colors.red[600],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
 
           const SizedBox(height: 24),

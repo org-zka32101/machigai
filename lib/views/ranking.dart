@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 import 'package:machigai/models/index.dart';
 import 'package:machigai/viewmodels/index.dart';
 
@@ -272,47 +273,64 @@ class _UserRankCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // ランク上昇インジケータ
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  ranking.scoreChange > 0
-                      ? Icons.trending_up
-                      : ranking.scoreChange < 0
-                          ? Icons.trending_down
-                          : Icons.trending_flat,
-                  size: 16,
-                  color: ranking.scoreChange > 0
-                      ? Colors.lightGreen
-                      : ranking.scoreChange < 0
-                          ? Colors.red[300]
-                          : Colors.grey[300],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  changeIndicator,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: ranking.scoreChange > 0
-                        ? Colors.lightGreen
-                        : ranking.scoreChange < 0
-                            ? Colors.red[300]
-                            : Colors.grey[300],
-                    fontWeight: FontWeight.w600,
+          // ランク上昇インジケータ with Pulse animation
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Pulse Lottie animation (only show if rank changed)
+              if (ranking.scoreChange != 0)
+                SizedBox(
+                  width: 120,
+                  height: 40,
+                  child: Lottie.asset(
+                    'assets/animations/pulse.json',
+                    repeat: true,
+                    fit: BoxFit.contain,
                   ),
                 ),
-              ],
-            ),
+              // Rank change indicator
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      ranking.scoreChange > 0
+                          ? Icons.trending_up
+                          : ranking.scoreChange < 0
+                              ? Icons.trending_down
+                              : Icons.trending_flat,
+                      size: 16,
+                      color: ranking.scoreChange > 0
+                          ? Colors.lightGreen
+                          : ranking.scoreChange < 0
+                              ? Colors.red[300]
+                              : Colors.grey[300],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      changeIndicator,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: ranking.scoreChange > 0
+                            ? Colors.lightGreen
+                            : ranking.scoreChange < 0
+                                ? Colors.red[300]
+                                : Colors.grey[300],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
