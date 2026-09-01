@@ -11,3 +11,6 @@ export 'video_template_service.dart';
 export 'cache_service.dart';
 export 'performance_service.dart';
 export 'achievement_service.dart';
+export 'local_storage_service.dart';
+export 'sync_manager.dart';
+export 'prefetch_service.dart';
