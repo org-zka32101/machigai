@@ -61,30 +61,41 @@ final _router = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const HomeScreen(),
+      pageBuilder: (context, state) => MaterialPage(
+        child: const HomeScreen(),
+      ),
       routes: [
         // 問題作成フロー
         GoRoute(
           path: 'template-select',
-          builder: (context, state) => const TemplateSelectScreen(),
+          pageBuilder: (context, state) => _buildFadeTransitionPage(
+            const TemplateSelectScreen(),
+            state,
+          ),
         ),
         GoRoute(
           path: 'edit',
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             final templateId = state.extra as String?;
-            return EditScreen(templateId: templateId ?? '');
+            return _buildSlideTransitionPage(
+              EditScreen(templateId: templateId ?? ''),
+              state,
+            );
           },
         ),
         GoRoute(
           path: 'challenge-published',
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             final extras = state.extra as Map<String, dynamic>?;
             if (extras == null) {
-              return const HomeScreen();
+              return MaterialPage(child: const HomeScreen());
             }
-            return ChallengePublishedScreen(
-              template: extras['template'] as VideoTemplate,
-              edit: extras['edit'] as VideoEdit,
+            return _buildFadeTransitionPage(
+              ChallengePublishedScreen(
+                template: extras['template'] as VideoTemplate,
+                edit: extras['edit'] as VideoEdit,
+              ),
+              state,
             );
           },
         ),
@@ -92,27 +103,33 @@ final _router = GoRouter(
         // 問題解答フロー
         GoRoute(
           path: 'solve',
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             final challengeId = state.queryParameters['id'];
             final shareToken = state.queryParameters['token'];
-            return SolveScreen(
-              challengeId: challengeId,
-              shareToken: shareToken,
+            return _buildSlideTransitionPage(
+              SolveScreen(
+                challengeId: challengeId,
+                shareToken: shareToken,
+              ),
+              state,
             );
           },
         ),
         GoRoute(
           path: 'result',
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             final extras = state.extra as Map<String, dynamic>?;
             if (extras == null) {
-              return const HomeScreen();
+              return MaterialPage(child: const HomeScreen());
             }
-            return ResultScreen(
-              challenge: extras['challenge'] as UserGeneratedChallenge,
-              isCorrect: extras['isCorrect'] as bool,
-              solveTimeSeconds: extras['solveTimeSeconds'] as int,
-              selectedRegionIndex: extras['selectedRegionIndex'] as int,
+            return _buildScaleTransitionPage(
+              ResultScreen(
+                challenge: extras['challenge'] as UserGeneratedChallenge,
+                isCorrect: extras['isCorrect'] as bool,
+                solveTimeSeconds: extras['solveTimeSeconds'] as int,
+                selectedRegionIndex: extras['selectedRegionIndex'] as int,
+              ),
+              state,
             );
           },
         ),
@@ -120,11 +137,17 @@ final _router = GoRouter(
         // ランキング・プロフィール
         GoRoute(
           path: 'ranking',
-          builder: (context, state) => const RankingScreen(),
+          pageBuilder: (context, state) => _buildFadeTransitionPage(
+            const RankingScreen(),
+            state,
+          ),
         ),
         GoRoute(
           path: 'profile',
-          builder: (context, state) => const ProfileScreen(),
+          pageBuilder: (context, state) => _buildFadeTransitionPage(
+            const ProfileScreen(),
+            state,
+          ),
         ),
       ],
     ),
@@ -136,3 +159,72 @@ final _router = GoRouter(
     ),
   ),
 );
+
+/// Fade transition page builder
+CustomTransitionPage<void> _buildFadeTransitionPage(
+  Widget child,
+  GoRouterState state,
+) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: animation,
+        child: child,
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 300),
+    reverseTransitionDuration: const Duration(milliseconds: 300),
+  );
+}
+
+/// Slide transition page builder (from right)
+CustomTransitionPage<void> _buildSlideTransitionPage(
+  Widget child,
+  GoRouterState state,
+) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return SlideTransition(
+        position: animation.drive(
+          Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).chain(CurveTween(curve: Curves.easeInOut)),
+        ),
+        child: child,
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 400),
+    reverseTransitionDuration: const Duration(milliseconds: 400),
+  );
+}
+
+/// Scale transition page builder (pop-in effect)
+CustomTransitionPage<void> _buildScaleTransitionPage(
+  Widget child,
+  GoRouterState state,
+) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return ScaleTransition(
+        scale: animation.drive(
+          Tween<double>(begin: 0.8, end: 1.0).chain(
+            CurveTween(curve: Curves.elasticOut),
+          ),
+        ),
+        child: FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 500),
+    reverseTransitionDuration: const Duration(milliseconds: 300),
+  );
+}
