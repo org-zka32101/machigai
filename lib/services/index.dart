@@ -8,3 +8,6 @@ export 'ranking_service.dart';
 export 'analytics_service.dart';
 export 'initial_problem_pool_service.dart';
 export 'video_template_service.dart';
+export 'cache_service.dart';
+export 'performance_service.dart';
+export 'achievement_service.dart';
