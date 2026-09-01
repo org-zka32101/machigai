@@ -62,6 +62,12 @@ class EditScreen extends ConsumerWidget {
 
                     const SizedBox(height: 24),
 
+                    // AI品質スコア分析
+                    if (editState.currentEdit != null)
+                      _AIQualityScore(edit: editState.currentEdit!),
+
+                    const SizedBox(height: 24),
+
                     // アクションボタン
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -864,5 +870,213 @@ class _CropField extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// AI品質スコア分析パネル
+class _AIQualityScore extends ConsumerWidget {
+  final VideoEdit edit;
+
+  const _AIQualityScore({required this.edit});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 仮想チャレンジを作成してスコアを計算
+    final mockChallenge = UserGeneratedChallenge(
+      id: 'temp',
+      creatorId: 'temp',
+      videoUrl: '',
+      editedPoint: edit.editedParams,
+      difficulty: 'medium',
+      createdAt: DateTime.now(),
+      shareToken: '',
+      moderationStatus: 'pending',
+    );
+
+    final scoreAsync = ref.watch(challengeQualityScoreProvider(mockChallenge));
+    final labelAsync = ref.watch(
+      qualityLabelProvider(scoreAsync.valueOrNull ?? 0),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue[50],
+          border: Border.all(color: Colors.blue[200]!),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: scoreAsync.when(
+          data: (score) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // タイトル
+                Row(
+                  children: [
+                    Icon(
+                      Icons.smart_toy,
+                      color: Colors.blue[700],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'AI品質分析',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue[900],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // スコアバー
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '品質スコア',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue[800],
+                          ),
+                        ),
+                        Text(
+                          '${score.toStringAsFixed(1)}/100',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[900],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: score / 100,
+                        minHeight: 8,
+                        backgroundColor: Colors.blue[200],
+                        valueColor: AlwaysStoppedAnimation(
+                          score >= 70
+                              ? Colors.green
+                              : score >= 50
+                                  ? Colors.orange
+                                  : Colors.red,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // 品質ラベル
+                labelAsync.when(
+                  data: (label) {
+                    final isGood = score >= 70;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isGood
+                            ? Colors.green[100]
+                            : score >= 50
+                                ? Colors.orange[100]
+                                : Colors.red[100],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isGood
+                              ? Colors.green[800]
+                              : score >= 50
+                                  ? Colors.orange[800]
+                                  : Colors.red[800],
+                        ),
+                      ),
+                    );
+                  },
+                  loading: () => const Text(
+                    '評価中...',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  error: (_, __) => const Text(
+                    'エラー',
+                    style: TextStyle(fontSize: 12, color: Colors.red),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // 分析コメント
+                Text(
+                  _getScoreComment(score),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue[700],
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            );
+          },
+          loading: () => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(Colors.blue[600]),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'AI診断中...',
+                    style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          error: (error, stack) => Text(
+            'スコア計算エラー: $error',
+            style: const TextStyle(fontSize: 12, color: Colors.red),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// スコアに基づいてコメントを生成
+  String _getScoreComment(double score) {
+    if (score >= 80) {
+      return '✨ 素晴らしい品質です！この問題は即座に公開できます。';
+    } else if (score >= 60) {
+      return '👍 良好な品質です。いくつかの調整で更に良くなります。';
+    } else if (score >= 40) {
+      return '🔧 編集をもっと工夫してみてください。複数のパラメータを組み合わせると良いでしょう。';
+    } else if (score >= 20) {
+      return '⚠️ 編集の多様性が足りません。色や位置など異なるパラメータを試してください。';
+    } else {
+      return '❌ 編集が不十分です。少なくとも1つ以上の編集が必要です。';
+    }
   }
 }
